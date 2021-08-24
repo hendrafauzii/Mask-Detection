@@ -36,7 +36,7 @@ def mask_detection(model, input_details, output_details, frame, xmin, ymin, xmax
     model.invoke()
     output = model.get_tensor(output_details[0]['index'])
 
-    return 'Without Mask' if output[0] > 0.5 else 'With Mask'
+    return ['Without Mask', (0, 0, 255)] if output[0] > 0.5 else ['With Mask', (0, 255, 0)]
 
 
 # Load Mask Detection Model
@@ -60,11 +60,13 @@ while True:
 
     bbox = face_detection(faceNet, frame)
     for xmin, ymin, xmax, ymax in bbox:
-        label = mask_detection(maskNet, input_details, output_details, frame, xmin, ymin, xmax, ymax)
-        if label == 'With Mask':
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
-        else:
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)
+        label, color = mask_detection(maskNet, input_details, output_details, frame, xmin, ymin, xmax, ymax)
+        cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
+
+        t_size = cv2.getTextSize(label, 0, 0.5, 2)[0]
+        cv2.rectangle(frame, (xmin, ymin), (xmin + t_size[0], ymin - t_size[1] - 3), color, -1)
+        cv2.putText(frame, label, (xmin, ymin - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2 // 2,
+                    lineType=cv2.LINE_AA)
 
     cv2.imshow('Frame', frame)
 
