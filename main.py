@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import tensorflow as tf
+import time
 
 def face_detection(model, frame):
     h, w = frame.shape[:2]
@@ -40,7 +41,7 @@ def mask_detection(model, input_details, output_details, frame, xmin, ymin, xmax
 
 
 # Load Mask Detection Model
-maskNet = tf.lite.Interpreter(model_path = 'mask_model.tflite')
+maskNet = tf.lite.Interpreter(model_path = 'mask_model/save_model.tflite')
 maskNet.allocate_tensors()
 input_details = maskNet.get_input_details()
 output_details = maskNet.get_output_details()
@@ -53,12 +54,15 @@ faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 cap = cv2.VideoCapture(0)
 
 while True:
+    a_time = time.time()
     ret, frame = cap.read()
     if ret == False:
         print('Failed opened Camera')
         break
 
     bbox = face_detection(faceNet, frame)
+    b_time = time.time()
+
     for xmin, ymin, xmax, ymax in bbox:
         label, color = mask_detection(maskNet, input_details, output_details, frame, xmin, ymin, xmax, ymax)
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
@@ -67,8 +71,14 @@ while True:
         cv2.rectangle(frame, (xmin, ymin), (xmin + t_size[0], ymin - t_size[1] - 3), color, -1)
         cv2.putText(frame, label, (xmin, ymin - 2), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2 // 2,
                     lineType=cv2.LINE_AA)
-
+    
     cv2.imshow('Frame', frame)
+    c_time = time.time()
+
+    print(f"Face Det: {round(b_time - a_time, 4)} \
+            Mask Det: {round(c_time - b_time, 4)} \
+            Total Inf: {round(c_time - a_time, 4)} \
+            FPS: {round(1/(c_time - a_time),2)}")
 
     if cv2.waitKey(1) == ord('q'):
         break
